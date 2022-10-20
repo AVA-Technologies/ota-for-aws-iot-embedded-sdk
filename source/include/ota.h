@@ -49,6 +49,11 @@
 
 #define OTA_FILE_SIG_KEY_STR_MAX_LENGTH    32 /*!< Maximum length of the file signature key. */
 
+/**
+ * Expose block size for other source files
+ */
+extern uint32_t ota_file_block_size;
+extern uint32_t log2_ota_file_block_size;
 
 /**
  * @ingroup ota_helpers

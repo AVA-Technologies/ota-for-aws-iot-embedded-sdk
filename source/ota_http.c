@@ -91,7 +91,7 @@ OtaErr_t requestDataBlock_Http( OtaAgentContext_t * pAgentCtx )
     fileContext = &( pAgentCtx->fileContext );
 
     /* Calculate ranges. */
-    rangeStart = currBlock * OTA_FILE_BLOCK_SIZE;
+    rangeStart = currBlock * ota_file_block_size;
 
     if( fileContext->blocksRemaining == 1U )
     {
@@ -99,7 +99,7 @@ OtaErr_t requestDataBlock_Http( OtaAgentContext_t * pAgentCtx )
     }
     else
     {
-        rangeEnd = rangeStart + OTA_FILE_BLOCK_SIZE - 1U;
+        rangeEnd = rangeStart + ota_file_block_size - 1U;
     }
 
     /* Request file data over HTTP using the rangeStart and rangeEnd. */
@@ -132,10 +132,10 @@ OtaErr_t decodeFileBlock_Http( const uint8_t * pMessageBuffer,
     assert( pMessageBuffer != NULL && pFileId != NULL && pBlockId != NULL &&
             pBlockSize != NULL && pPayload != NULL && pPayloadSize != NULL );
 
-    if( messageSize > OTA_FILE_BLOCK_SIZE )
+    if( messageSize > ota_file_block_size)
     {
         LogError( ( "Incoming file block size %d larger than block size %d.",
-                    ( int ) messageSize, ( int ) OTA_FILE_BLOCK_SIZE ) );
+                    ( int ) messageSize, ( int ) ota_file_block_size ) );
         err = OtaErrInvalidArg;
     }
     else

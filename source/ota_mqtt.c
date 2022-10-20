@@ -614,7 +614,7 @@ static uint32_t buildStatusMessageReceiving( char * pMsgBuffer,
     /* This function is only called when a file is received, so it can't be NULL. */
     assert( pOTAFileCtx != NULL );
 
-    numBlocks = ( pOTAFileCtx->fileSize + ( OTA_FILE_BLOCK_SIZE - 1U ) ) >> otaconfigLOG2_FILE_BLOCK_SIZE;
+    numBlocks = ( pOTAFileCtx->fileSize + ( ota_file_block_size - 1U ) ) >> log2_ota_file_block_size;
     received = numBlocks - pOTAFileCtx->blocksRemaining;
 
     /* Output a status update once in a while. */
@@ -1036,7 +1036,7 @@ OtaErr_t requestFileBlock_Mqtt( OtaAgentContext_t * pAgentCtx )
     OtaErr_t result = OtaErrRequestFileBlockFailed;
     OtaMqttStatus_t mqttStatus = OtaMqttSuccess;
     size_t msgSizeFromStream = 0;
-    uint32_t blockSize = OTA_FILE_BLOCK_SIZE;
+    uint32_t blockSize = ota_file_block_size;
     uint32_t numBlocks = 0;
     uint32_t bitmapLen = 0;
     uint32_t msgSizeToPublish = 0;
@@ -1071,7 +1071,7 @@ OtaErr_t requestFileBlock_Mqtt( OtaAgentContext_t * pAgentCtx )
     /* Reset number of blocks requested. */
     pAgentCtx->numOfBlocksToReceive = otaconfigMAX_NUM_BLOCKS_REQUEST;
 
-    numBlocks = ( pFileContext->fileSize + ( OTA_FILE_BLOCK_SIZE - 1U ) ) >> otaconfigLOG2_FILE_BLOCK_SIZE;
+    numBlocks = ( pFileContext->fileSize + ( ota_file_block_size - 1U ) ) >> log2_ota_file_block_size;
     bitmapLen = ( numBlocks + ( BITS_PER_BYTE - 1U ) ) >> LOG2_BITS_PER_BYTE;
 
     cborEncodeRet = OTA_CBOR_Encode_GetStreamRequestMessage( ( uint8_t * ) pMsg,

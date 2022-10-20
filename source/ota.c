@@ -68,6 +68,17 @@
 /* Include firmware version struct definition. */
 #include "ota_appversion32.h"
 
+/* OTA both ESP32 and J&C MCU */
+#include "ava_ota_pal.h"
+#include "ava_jnc_fw_update.h"
+
+/**
+ * OTA File Block Size
+ * Variables updated when a new OTA job document is received.
+ * ESP32 = 4096 Bytes. J&C MCU = 256 Bytes
+ */
+uint32_t ota_file_block_size;
+uint32_t log2_ota_file_block_size;
 
 /**
  * @brief Offset helper.
@@ -2366,9 +2377,15 @@ static OtaFileContext_t * getFileContextFromJob( const char * pRawMsg,
 
     if( ( updateJob == false ) && ( pUpdateFile != NULL ) && ( platformInSelftest() == false ) )
     {
+        /* Update the block size to request from AWS during an OTA update */
+        ota_file_block_size = pUpdateFile->fileType == OTA_JOB_ESP32_FILETYPE ?
+                              otaconfigFILE_BLOCK_SIZE : AVA_JNC_FW_UPDATE_BLOCK_SIZE;
+        log2_ota_file_block_size = pUpdateFile->fileType == OTA_JOB_ESP32_FILETYPE ?
+                                   otaconfigLOG2_FILE_BLOCK_SIZE : AVA_JNC_FW_UPDATE_LOG2_BLOCK_SIZE;
+
         /* Calculate how many bytes we need in our bitmap for tracking received blocks.
          * The below calculation requires power of 2 page sizes. */
-        numBlocks = ( pUpdateFile->fileSize + ( OTA_FILE_BLOCK_SIZE - 1U ) ) >> otaconfigLOG2_FILE_BLOCK_SIZE;
+        numBlocks = ( pUpdateFile->fileSize + ( ota_file_block_size - 1U ) ) >> log2_ota_file_block_size;
         bitmapLen = ( numBlocks + ( BITS_PER_BYTE - 1U ) ) >> LOG2_BITS_PER_BYTE;
 
         if( pUpdateFile->blockBitmapMaxSize == 0u )
@@ -2454,10 +2471,10 @@ static bool validateDataBlock( const OtaFileContext_t * pFileContext,
     bool ret = false;
     uint32_t lastBlock = 0;
 
-    lastBlock = ( ( pFileContext->fileSize + ( OTA_FILE_BLOCK_SIZE - 1U ) ) >> otaconfigLOG2_FILE_BLOCK_SIZE ) - 1U;
+    lastBlock = ( ( pFileContext->fileSize + ( ota_file_block_size - 1U ) ) >> log2_ota_file_block_size ) - 1U;
 
-    if( ( ( blockIndex < lastBlock ) && ( blockSize == OTA_FILE_BLOCK_SIZE ) ) ||
-        ( ( blockIndex == lastBlock ) && ( blockSize == ( pFileContext->fileSize - ( lastBlock * OTA_FILE_BLOCK_SIZE ) ) ) ) )
+    if( ( ( blockIndex < lastBlock ) && ( blockSize == ota_file_block_size ) ) ||
+        ( ( blockIndex == lastBlock ) && ( blockSize == ( pFileContext->fileSize - ( lastBlock * ota_file_block_size ) ) ) ) )
     {
         ret = true;
         LogInfo( ( "Received valid file block: Block index=%u, Size=%u",
@@ -2513,7 +2530,7 @@ static IngestResult_t processDataBlock( OtaFileContext_t * pFileContext,
         if( pFileContext->pFile != NULL )
         {
             int32_t iBytesWritten = otaAgent.pOtaInterface->pal.writeBlock( pFileContext,
-                                                                            ( uBlockIndex * OTA_FILE_BLOCK_SIZE ),
+                                                                            ( uBlockIndex * ota_file_block_size ),
                                                                             pPayload,
                                                                             uBlockSize );
 
@@ -2571,11 +2588,11 @@ static IngestResult_t decodeAndStoreDataBlock( OtaFileContext_t * pFileContext,
         }
         else
         {
-            *pPayload = otaAgent.pOtaInterface->os.mem.malloc( 1UL << otaconfigLOG2_FILE_BLOCK_SIZE );
+            *pPayload = otaAgent.pOtaInterface->os.mem.malloc( 1UL << log2_ota_file_block_size );
 
             if( *pPayload != NULL )
             {
-                payloadSize = ( 1UL << otaconfigLOG2_FILE_BLOCK_SIZE );
+                payloadSize = ( 1UL << log2_ota_file_block_size );
             }
         }
     }
